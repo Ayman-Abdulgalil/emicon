@@ -19,6 +19,7 @@ set -e
 
 INSTALL_BIN="$HOME/.local/bin"
 MOSINT_BIN="$INSTALL_BIN/mosint"
+CONFIG_PATH="$HOME/.mosint.yaml"
 
 # Check if mosint is installed in PATH
 if command -v mosint &>/dev/null; then
@@ -98,4 +99,22 @@ if "$MOSINT_BIN" --version; then
 else
     echo "Error: Mosint was installed, but cannot be used. Manual intervention needed."
     exit 1
+fi
+
+# Config file check
+if [ -f "$CONFIG_PATH" ]; then
+    echo ".mosint.yaml was found."
+else 
+    echo ".mosint.yaml config file was not found. Creating a default one in $HOME "
+    cat >"$CONFIG_PATH" <<EOF
+services:
+  breach_directory_api_key: SET_YOUR_API_KEY_HERE
+  emailrep_api_key: SET_YOUR_API_KEY_HERE
+  hunter_api_key: SET_YOUR_API_KEY_HERE
+  intelx_api_key: SET_YOUR_API_KEY_HERE
+  haveibeenpwned_api_key: SET_YOUR_API_KEY_HERE
+
+settings:
+  intelx_max_results: 20
+EOF
 fi

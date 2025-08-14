@@ -6,10 +6,6 @@ param(
 )
 
 
-$InstallBin = Join-Path $env:USERPROFILE "bin"
-$MosintBin = Join-Path $InstallBin "mosint.exe"
-
-
 # Ensure destination bin exists
 if (-not (Test-Path $InstallBin)) {
     New-Item -ItemType Directory -Path $InstallBin -Force | Out-Null
@@ -20,6 +16,10 @@ if (Get-Command mosint -ErrorAction SilentlyContinue) {
     Write-Host "Mosint is already installed."
     exit 0
 }
+
+$InstallBin = Join-Path $env:USERPROFILE "bin"
+$MosintBin = Join-Path $InstallBin "mosint.exe"
+$configPath = "$HOME\.mosint.yaml"
 
 Write-Host "Mosint not found. Installing Mosint..."
 
@@ -102,4 +102,25 @@ if (Test-Path $MosintBin) {
 } else {
     Write-Host "Mosint binary was not found at $MosintBin. Manual intervention needed."
     exit 1
+}
+
+# Checking for config file
+$defaultConfig = @"
+services:
+  breach_directory_api_key: SET_YOUR_API_KEY_HERE
+  emailrep_api_key: SET_YOUR_API_KEY_HERE
+  hunter_api_key: SET_YOUR_API_KEY_HERE
+  intelx_api_key: SET_YOUR_API_KEY_HERE
+  haveibeenpwned_api_key: SET_YOUR_API_KEY_HERE
+
+settings:
+  intelx_max_results: 20
+"@
+
+if (Test-Path -Path $configPath -PathType Leaf) {
+    Write-Host ".mosint.yaml was found."
+} else {
+    Write-Host ".mosint.yaml config file was not found. Creating a default one in $HOME"
+    # Create the file with the default content
+    $defaultConfig | Out-File -FilePath $configPath -Encoding utf8
 }
