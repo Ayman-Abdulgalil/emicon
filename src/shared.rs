@@ -1,154 +1,80 @@
+// use directories::ProjectDirs;
+// use once_cell::sync::Lazy;
+// use std::{fs, io, path::PathBuf};
 use std::io;
-use std::fmt;
-use std::env;
-use serde_json;
+use thiserror::Error;
 
+// static PROJECT_DIRS: Lazy<Option<ProjectDirs>> = Lazy::new(|| ProjectDirs::from("", "", "emicon"));
 
-
-/// Application-wide error type to capture different operational errors.
-#[derive(Debug)]
-pub enum Ecerr {
-    // NoInternet,
-    MosintInvalidSyntax,
-    MosintExecutionFailed,
-    MosintFileReadError(io::Error),
-    MosintParseError(serde_json::Error),
-    Io(io::Error),
+#[derive(Error, Debug)]
+pub enum HibpError {
+    #[error("Email not found in any breaches")]
+    NotFound,
+    #[error("Rate limited - too many requests")]
+    RateLimit,
+    #[error("Unauthorized - invalid API key")]
+    Unauthorized,
+    #[error("Forbidden - request forbidden")]
+    Forbidden,
+    #[error("Bad request - invalid email format")]
+    BadRequest,
+    #[error("Service unavailable")]
+    ServiceUnavailable,
+    #[error("Unknown error: {status} - {message}")]
+    Unknown { status: u16, message: String },
 }
 
-impl fmt::Display for Ecerr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            // Ecerr::NoInternet => write!(f, "No internet connection"),
-            Ecerr::MosintInvalidSyntax => write!(f, "Invalid email syntax for Mosint"),
-            Ecerr::MosintExecutionFailed => write!(f, "Mosint process failed"),
-            Ecerr::MosintFileReadError(e) => write!(f, "Failed to read Mosint output: {}", e),
-            Ecerr::MosintParseError(e) => write!(f, "Failed to parse Mosint JSON: {}", e),
-            Ecerr::Io(e) => write!(f, "I/O error: {}", e),
-        }
-    }
+/// Application-wide error type.
+#[derive(Debug, Error)]
+pub enum EmiconError {
+    // #[error("Could no resolve the program directories.")]
+    // ProgramDirsUnavailable,
+    #[error("HTTP request failed: {0}")]
+    Request(#[from] reqwest::Error),
+    #[error(transparent)]
+    HibpError(#[from] HibpError),
+    #[error("Slint Error")]
+    SlintError(#[from] slint::PlatformError),
+    #[error("JSON parsing failed: {0}")]
+    JsonError(#[from] serde_json::Error),
+    #[error(transparent)]
+    IoError(#[from] io::Error),
 }
 
-impl std::error::Error for Ecerr {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Ecerr::MosintFileReadError(e) => Some(e),
-            Ecerr::MosintParseError(e) => Some(e),
-            Ecerr::Io(e) => Some(e),
-            _ => None,
-        }
-    }
-}
+/// Application-wide result type.
+pub type Result<T> = std::result::Result<T, EmiconError>;
 
-impl From<io::Error> for Ecerr {
-    fn from(error: io::Error) -> Self {
-        Ecerr::Io(error)
-    }
-}
+// fn project_dirs() -> Result<&'static ProjectDirs> {
+//     PROJECT_DIRS
+//         .as_ref()
+//         .ok_or_else(|| EmiconError::ProgramDirsUnavailable)
+// }
 
-impl From<serde_json::Error> for Ecerr {
-    fn from(error: serde_json::Error) -> Self {
-        Ecerr::MosintParseError(error)
-    }
-}
+// /// Returns the standard local data directory for the app, as specified in the
+// /// **directories** crate.
+// ///
+// /// Defaults to:
+// /// - **Linux:** `~/.local/share/emicon`
+// /// - **Windows:** `%LOCALAPPDATA%\emicon`
+// /// - **macOS:** `~/Library/Application Support/emicon`
+// ///
+// /// If not found, path is created.
+// pub fn data_directory() -> Result<PathBuf> {
+//     fs::create_dir_all(project_dirs()?.data_dir())?;
+//     Ok(project_dirs()?.data_dir().to_path_buf())
+// }
 
-
-
-#[cfg(target_os = "linux")] 
-/// Expand environment variables in a string, in Unix and Windows.
-pub fn env_var_expand(input: &str) -> String {
-    let mut output = String::new();
-    let mut chars = input.chars().peekable();
-
-    while let Some(c) = chars.next() {
-        if c == '$' {
-            if let Some(&next) = chars.peek() {
-                if next == '{' {
-                    // Parse ${VAR}
-                    chars.next(); // consume '{'
-                    let mut var_name = String::new();
-                    while let Some(&ch) = chars.peek() {
-                        if ch == '}' {
-                            chars.next(); // consume '}'
-                            break;
-                        }
-                        var_name.push(ch);
-                        chars.next();
-                    }
-                    if let Ok(val) = env::var(&var_name) {
-                        output.push_str(&val);
-                    } else {
-                        // If not found, keep original syntax
-                        output.push_str(&format!("${{{}}}", var_name));
-                    }
-                } else {
-                    // Parse $VAR
-                    let mut var_name = String::new();
-
-                    // According to POSIX, variable names are [A-Za-z0-9_] starting with letter or _
-                    while let Some(&ch) = chars.peek() {
-                        if ch.is_alphanumeric() || ch == '_' {
-                            var_name.push(ch);
-                            chars.next();
-                        } else {
-                            break;
-                        }
-                    }
-
-                    if !var_name.is_empty() {
-                        if let Ok(val) = env::var(&var_name) {
-                            output.push_str(&val);
-                        } else {
-                            output.push('$');
-                            output.push_str(&var_name);
-                        }
-                    } else {
-                        // No valid var name, just output '$'
-                        output.push('$');
-                    }
-                }
-            } else {
-                // '$' at end of string, just output it
-                output.push('$');
-            }
-        } else {
-            output.push(c);
-        }
-    }
-
-    output
-}
-
-#[cfg(target_os = "windows")]
-/// Expand environment variables in a string, in Unix and Windows.
-pub fn env_var_expand(input: &str) -> String {
-    let mut output = String::new();
-    let mut chars = input.chars().peekable();
-
-    while let Some(c) = chars.next() {
-        if c == '%' {
-            let mut var_name = String::new();
-            while let Some(&next_char) = chars.peek() {
-                if next_char == '%' {
-                    chars.next(); // consume the closing '%'
-                    break;
-                } else {
-                    var_name.push(next_char);
-                    chars.next();
-                }
-            }
-            if let Ok(val) = env::var(&var_name) {
-                output.push_str(&val);
-            } else {
-                // If env var not found, keep it as-is with percent signs
-                output.push('%');
-                output.push_str(&var_name);
-                output.push('%');
-            }
-        } else {
-            output.push(c);
-        }
-    }
-    output
-}
+// /// Returns the standard local config directory for the app, as specified in the
+// /// **directories** crate.
+// ///
+// /// Defaults to:
+// /// - **Linux:** `~/.config/emicon`
+// /// - **Windows:** `%APPDATA%\emicon`
+// /// - **macOS:** `~/Library/Preferences/emicon`
+// ///
+// /// If not found, path is created.
+// pub fn config_directory() -> Result<PathBuf> {
+//     fs::create_dir_all(project_dirs()?.config_dir())?;
+//     Ok(project_dirs()?.config_dir().to_path_buf())
+// }
 
