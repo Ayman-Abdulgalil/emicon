@@ -5,80 +5,52 @@ mod hibp;
 mod shared;
 
 use hibp::HibpClient;
-use shared::Result;
+use shared::EmiconResult;
 
 // slint::include_modules!();
 
-fn main() -> Result<()> {
+fn main() -> EmiconResult<()> {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap();
 
-    let client = HibpClient::new(None, "emicon".to_string());
+    let mut client = HibpClient::new(None, "emicon".to_string(), 30)?;
 
-    let (breaches, pastes, d_breaches, passwords, breach, all_bs) = runtime.block_on(async {
+    client.change_api_key(None)?;
+    client.change_time_out(20)?;
+
+    let (breache_names,
+        breaches,
+        pastes,
+        passwords,
+        breach,
+        all_bs,
+        substat,
+        subdomains
+    ) = runtime.block_on(async {
         tokio::join!(
-            client.check_breaches("account-exists@hibp-integration-tests.com"),
-            client.check_pastes("account-exists@hibp-integration-tests.com"),
-            client.check_domain("google.com"),
+            client.check_account_breach_names("account-exists@hibp-integration-tests.com"),
+            client.check_account_breaches("account-exists@hibp-integration-tests.com"),
+            client.check_account_paste("google.com"),
             client.check_password("123456789"),
-            client.get_breach("IDK"),
-            client.all_breaches()
+            client.get_breach("Adobe"),
+            client.get_all_breaches(None),
+            client.get_subscription_status(),
+            client.get_subscribed_domains()
         )
     });
 
-    println!("Checking passwords");
-    if let Some(no) = passwords? {
-        println!(
-            "Your password appeared {} times in the search results !",
-            no
-        );
-    } else {
-        println!("Your password didn't appear in the search results !");
-    }
+    println!(" - {} passwords.", passwords?);
+    println!(" - {}", breache_names?.len());
+    println!(" - {}", breaches?.len());
+    println!(" - {} pastes", pastes?.len());
+    println!(" - {} breach found", breach?.title);
+    println!(" - {} breaches", all_bs?.len());
+    println!(" - subscription status: {}", substat?.sub_name);
+    println!(" - subscribed domains: {}", subdomains?.len());
 
-    println!("Checking domain breaches");
-    match d_breaches {
-        Ok(breach_vector) => {
-            println!("Found {} breaches:", breach_vector.len());
-            for breach in breach_vector {
-                println!("- {} ({})", breach.title, breach.date);
-            }
-        }
-        Err(e) => {
-            return Err(e);
-        }
-    }
 
-    println!("Checking breaches");
-    match breaches {
-        Ok(breach_vector) => {
-            println!("Found {} breaches:", breach_vector.len());
-            for breach in breach_vector {
-                println!("- {} ({})", breach.title, breach.date);
-            }
-        }
-        Err(e) => {
-            return Err(e);
-        }
-    }
-
-    println!("Checking pastes");
-    match pastes {
-        Ok(paste_vector) => {
-            println!("Found {} breaches:", paste_vector.len());
-            for paste in paste_vector {
-                println!("- {} ({})", paste.title, paste.date);
-            }
-        }
-        Err(e) => {
-            return Err(e);
-        }
-    }
-
-    println!("{}", breach?.title);
-    println!("{}", all_bs?.len());
     // let ui = AppWindow::new()?;
 
     // ui.run()?;

@@ -460,3 +460,54 @@ impl RateLimiter {
         limiter
     }
 }
+
+
+/*
+use rate_limiter::{RateLimiter, LimitPeriod};
+
+#[tokio::main]
+async fn main() {
+    // Create a rate limiter: 10 requests/second, 20 burst, 1000/day, 25000/month
+    let limiter = RateLimiter::for_api_with_limits(10, Some(20), Some(1000), Some(25000)).await;
+    
+    // Or create and add limits manually
+    let limiter = RateLimiter::new(20, 10);
+    limiter.add_hard_limit("daily", 1000, LimitPeriod::Day).await;
+    limiter.add_hard_limit("monthly", 25000, LimitPeriod::Month).await;
+    limiter.add_hard_limit("hourly", 100, LimitPeriod::Hour).await;
+    
+    // In your API call function:
+    async fn make_api_call(limiter: &RateLimiter) -> Result<String, Box<dyn std::error::Error>> {
+        // Wait for rate limit (both token bucket and hard limits)
+        limiter.acquire_one().await?;
+        
+        // Make your actual API call
+        let response = reqwest::get("https://api.example.com/data").await?;
+        Ok(response.text().await?)
+    }
+    
+    // Monitor hard limit status
+    let status = limiter.hard_limit_status().await;
+    for (name, limit_status) in status {
+        println!("Limit {}: {}/{} used, {} remaining, resets in {:?}", 
+            name, 
+            limit_status.current_calls, 
+            limit_status.max_calls,
+            limit_status.remaining_calls,
+            limit_status.reset_in
+        );
+    }
+    
+    // Example: Making multiple API calls with error handling
+    for i in 0..1100 {
+        match make_api_call(&limiter).await {
+            Ok(_) => println!("Request {} succeeded", i),
+            Err(e) => {
+                println!("Request {} failed: {}", i, e);
+                // Handle rate limit exceeded - maybe wait or break
+                break;
+            }
+        }
+    }
+}
+*/
