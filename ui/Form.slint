@@ -132,9 +132,6 @@ export component FormCard inherits Rectangle {
                                     font-weight: 500;
                                     color: #6c757d;
                                     input-type: text;
-                                    init => {
-                                        self.focus();
-                                    }
                                 }
                             }
                         }
@@ -298,10 +295,6 @@ export component FormCard inherits Rectangle {
                                         color: #6c757d;
                                         input-type: selected-option == 2 ? hide-password ? password : text : text;
 
-                                        init => {
-                                            self.focus();
-                                        }
-
                                         accepted => {
                                             if the-password != "" {
                                                 hide-key = true;
@@ -427,10 +420,6 @@ export component FormCard inherits Rectangle {
                                     font-weight: 500;
                                     color: #6c757d;
                                     input-type: selected-option == 2 ? hide-password ? password : text : text;
-
-                                    init => {
-                                        self.focus();
-                                    }
 
                                     accepted => {
                                         if breach-name != "" {
