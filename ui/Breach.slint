@@ -1,0 +1,312 @@
+import { VerticalBox, HorizontalBox } from "std-widgets.slint";
+
+component DataClass inherits Rectangle {
+    in property <string> data;
+    in property <bool> displayed;
+
+    height: displayed ? 20px : 0px;
+
+    HorizontalBox {
+        padding: 0px;
+        spacing: 16px;
+        VerticalBox {
+            padding: 0px;
+            alignment: center;
+            Rectangle {
+                width: 6px;
+                height: 6px;
+                border-radius: 5px;
+                background: #ff5959;
+                drop-shadow-color: #ff0000;
+                drop-shadow-blur: 9px;
+            }
+        }
+
+        Text {
+            vertical-alignment: center;
+            text: data;
+            font-size: 11px;
+            font-weight: 400;
+            color: #495057;
+        }
+    }
+}
+
+component BreachStat inherits Rectangle {
+    in property <string> name;
+    in property <string> data;
+
+    HorizontalBox {
+        padding: 0px;
+        spacing: 0px;
+
+        VerticalBox {
+            padding: 0px;
+            alignment: center;
+            Rectangle {
+                width: 6px;
+                height: 6px;
+                border-radius: 5px;
+                background: #5977ff;
+                drop-shadow-color: #244cff;
+                drop-shadow-blur: 9px;
+            }
+        }
+
+        Rectangle {width: 16px;}
+
+        Text {
+            vertical-alignment: center;
+            width: 120px;
+            text: name;
+            font-size: 11px;
+            font-weight: 400;
+            color: #495057;
+        }
+
+        Rectangle {width: 6px;}
+
+        Text {
+            vertical-alignment: center;
+            text: data;
+            font-size: 11px;
+            font-weight: 600;
+            color: #495057;
+        }
+    }
+}
+
+component Divider inherits Rectangle {
+    height: 2px;
+    background: @linear-gradient(90deg, transparent 0%, #e9ecef 50%, transparent 100%);
+}
+
+export component BreachCard inherits Rectangle {
+    in property <string> name;
+    in property <string> description;
+    in property <string> domain;
+    in property <string> breach-date;
+    in property <int> pwn-count;
+    in property <[string]> data-classes;
+
+    callback close-card();
+
+    width: 360px;
+    background: white;
+    border-radius: 16px;
+    drop-shadow-blur: 15px;
+    drop-shadow-color: rgba(0, 0, 0, 0.1);
+
+    VerticalBox {
+        spacing: 20px;
+        padding: 24px;
+
+        if name != "": HorizontalBox {
+            height: 48px;
+            spacing: 8px;
+            
+            Text {
+                horizontal-alignment: right;
+                vertical-alignment: center;
+                text: name;
+                font-size: 20px;
+                font-weight: 600;
+                color: #353a3f;
+            }
+
+            VerticalBox {
+                padding: 0px;
+                spacing: 0px;
+                Rectangle {
+                    height: 6px;
+                }
+
+                Text {
+                    horizontal-alignment: left;
+                    vertical-alignment: center;
+                    text: "Breach";
+                    font-size: 10px;
+                    font-weight: 500;
+                    font-italic: true;
+                    color: #495057;
+                }
+            }
+        }
+
+        if description != "": VerticalBox {
+            padding: 0px;
+            spacing: 8px;
+            Text {
+                height: 24px;
+                vertical-alignment: center;
+                text: "What Happened";
+                font-size: 14px;
+                font-weight: 600;
+                color: #212529;
+            }
+
+            Text {
+                text: description;
+                wrap: word-wrap;
+                font-size: 11px;
+                font-weight: 400;
+                color: #495057;
+            }
+        }
+
+        if data-classes.length != 0: Divider { }
+
+        if data-classes.length != 0: VerticalBox {
+            padding: 0px;
+            spacing: 8px;
+            Text {
+                text: "Compromised Data";
+                vertical-alignment: center;
+                font-size: 14px;
+                font-weight: 600;
+                color: #212529;
+            }
+
+            HorizontalBox {
+                padding: 0px;
+                padding-left: 10px;
+                spacing: 0px;
+                VerticalBox {
+                    padding: 0px;
+                    padding-left: 10px;
+                    spacing: 0px;
+                    for i in data-classes.length: DataClass {
+                        property <bool> even: Math.mod(i, 2) == 0;
+                        visible: even;
+                        displayed: even;
+                        data: data-classes[i];
+                    }
+                }
+
+                VerticalBox {
+                    padding: 0px;
+                    padding-left: 10px;
+                    spacing: 0px;
+                    for i in data-classes.length: DataClass {
+                        property <bool> even: Math.mod(i, 2) != 0;
+                        visible: even;
+                        displayed: even;
+                        data: data-classes[i];
+                    }
+                }
+            }
+        }
+
+        if (domain != "" || breach-date != "" || pwn-count != 0): Divider { }
+
+        if (domain != "" || breach-date != "" || pwn-count != 0): VerticalBox {
+            padding: 0px;
+            spacing: 24px;
+            Text {
+                text: "Breach Overview";
+                vertical-alignment: center;
+                font-size: 14px;
+                font-weight: 600;
+                color: #212529;
+            }
+
+            VerticalBox {
+                padding: 0px;
+                padding-left: 20px;
+                spacing: 16px;
+
+                if domain != "": BreachStat {
+                    name: "Breached Domain:";
+                    data: domain;
+                }
+
+                if breach-date != "": BreachStat {
+                    name: "Breach Occurred:";
+                    data: breach-date;
+                }
+
+                if pwn-count != 0: BreachStat {
+                    name: "Affected Accounts:";
+                    data: pwn-count + "  accounts";
+                }
+            }
+        }
+    }
+}
+
+export component BreachSlip inherits Rectangle {
+    in property <string> name;
+    in property <string> domain;
+    in property <string> breach-date;
+
+    callback open-breach();
+
+    background: white;
+    border-radius: 16px;
+    drop-shadow-blur: 15px;
+    drop-shadow-color: rgba(0, 0, 0, 0.1);
+
+    TouchArea {
+        height: parent.height;
+        width: parent.width;
+        mouse-cursor: pointer;
+
+        clicked => {
+            open-breach();
+        }
+    }
+
+    VerticalLayout {
+        padding: 12px;
+        spacing: 8px;
+
+        Text {
+            text: name;
+            font-size: 14px;
+            font-weight: 600;
+            color: #212529;
+            vertical-alignment: center;
+        }
+
+        HorizontalBox {
+            padding: 0px;
+            spacing: 6px;
+            Text {
+                text: "Domain:";
+                font-size: 11px;
+                font-weight: 400;
+                color: #495057;
+                vertical-alignment: center;
+            }
+
+            Text {
+                text: domain;
+                font-size: 11px;
+                font-weight: 600;
+                color: #495057;
+                vertical-alignment: center;
+            }
+
+            Rectangle {
+                min-width: 24px;
+                horizontal-stretch: 1;
+            }
+
+            Text {
+                text: "Date:";
+                font-size: 11px;
+                font-weight: 400;
+                color: #495057;
+                vertical-alignment: center;
+            }
+
+            Text {
+                text: breach-date;
+                font-size: 11px;
+                font-weight: 600;
+                color: #495057;
+                vertical-alignment: center;
+            }
+        }
+    }
+}

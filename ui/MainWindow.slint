@@ -1,0 +1,532 @@
+import { VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { BreachCard, BreachSlip } from "Breach.slint";
+import { PasswordCard } from "Password.slint";
+import { PasteSlip } from "Paste.slint";
+import { FormCard } from "Form.slint";
+import { Overlay } from "Overlay.slint";
+
+export struct Breach {
+    name: string,
+    domain: string,
+    pwn-count: int,
+    description: string,
+    breach-date: string,
+    data-classes: [string],
+}
+
+export struct Paste {
+    title: string,
+    date: string,
+    source: string,
+    pasteId: string,
+    emailCount: int,
+}
+
+export component MainWindow inherits Window {
+    in-out property <Breach> breach;
+    in property <[Breach]> breaches: [];
+    in property <[Paste]> pastes: [];
+    in property <int> password-count: 0;
+    
+    in-out property <string> overlay-title;
+    in-out property <string> overlay-message;
+    in-out property <bool> successful;
+    
+    out property <string> key: "";
+
+    property <string> account: "";
+    property <string> password: "";
+    property <string> b-name: "";
+    property <int> form-idx: 0;
+
+    property <bool> show-form: true;
+    property <bool> show-pastes: false;
+    property <bool> show-breach: false;
+    property <bool> show-breaches: false;
+    property <bool> show-password: false;
+    property <bool> more-breaches;
+    property <bool> show-all: false;
+    property <bool> back-to-all;
+
+    callback submit-e-breach(string, string);
+    callback submit-e-pastes(string, string);
+    callback submit-password(string);
+    callback submit-breach(string);
+    callback get-latest();
+    callback get-all();
+    
+    width: 480px;
+    height: 720px;
+    title: "HIBP Wrapper";
+    background: #3a3a3a;
+
+    if overlay-title != "": Overlay {
+        z: 1;
+        max-win-width: 300px;
+        message: overlay-message;
+        title: overlay-title;
+        close => {
+            overlay-title = "";
+            overlay-message = "";
+        }
+    }
+
+    VerticalBox {
+        padding: 0px;
+        spacing: 0px;
+
+        VerticalBox {
+            padding: 0px;
+            padding-bottom: 24px;
+            height: 152px;
+            Rectangle {
+                height: 128px;
+                drop-shadow-blur: 15px;
+                drop-shadow-color: rgba(0, 0, 0, 0.1);
+                background: @linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                VerticalBox {
+                    padding: 30px;
+                    alignment: center;
+                    Text {
+                        text: "HIBP API Wrapper";
+                        font-size: 38px;
+                        font-weight: 700;
+                        color: white;
+                        horizontal-alignment: center;
+                    }
+
+                    Text {
+                        text: "Unofficial Have I Been Pwned GUI wrapper";
+                        font-size: 12px;
+                        color: #e0e0ff;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            if !show-form: HorizontalBox {
+                z: 1;
+                padding: 0px;
+                padding-left: 24px;
+                max-height: img.height;
+                alignment: start;
+                img := Image {
+                    source: @image-url("icons/arrow-left.svg");
+                    width: self.height;
+                    height: 24px;
+                    colorize: white;
+                    TouchArea {
+                        width: 100%;
+                        height: 100%;
+                        mouse-cursor: pointer;
+                        clicked => {
+                            if show-pastes {
+                                show-pastes = false;
+                                show-form = true;
+                                return;
+                            }
+                            if show-password {
+                                show-password = false;
+                                show-form = true;
+                                return;
+                            }
+                            if show-breach {
+                                show-breach = false;
+                                if more-breaches {
+                                    show-breaches = true;
+                                } else if back-to-all {
+                                    show-all = true;
+                                } else {
+                                    show-form = true;
+                                }
+                                return;
+                            }
+                            if show-breaches {
+                                show-breaches = false;
+                                more-breaches = false;
+                                show-form = true;
+                                return;
+                            }
+                            if show-all {
+                                show-all = false;
+                                back-to-all = false;
+                                show-form = true;
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+            HorizontalBox {
+                padding: 0px;
+                alignment: center;
+                VerticalBox {
+                    height: 440px;
+                    width: 432px;
+                    padding: 0px;
+                    spacing: 0px;
+                    alignment: start;
+    
+                    
+                    if show-form: FormCard {
+                        set-width: parent.width;
+                        selected-option : form-idx;
+                        email-address: account;
+                        the-password: password;
+                        breach-name: b-name;
+                        api-key: key;
+                        vertical-stretch: 1;
+                        overlay(title, message) => {
+                            overlay-message = message;
+                            overlay-title = title;
+                        }
+                        submit-e-breach(email, key) => {
+                            account = email;
+                            root.key = key;
+                            submit-e-breach(email, key);
+                            if successful {
+                                show-form = false;
+                                show-breaches = true;
+                                more-breaches = true;
+                                successful = false;
+                            }
+                        }
+                        submit-e-pastes(email, key) => {
+                            account = email;
+                            root.key = key;
+                            submit-e-pastes(email, key);
+                            if successful {
+                                show-form = false;
+                                show-pastes = true;
+                                successful = false;
+                            }
+                        }
+                        submit-password(pass, key) => {
+                            password = pass;
+                            root.key = key;
+                            submit-password(pass);
+                            if successful {
+                                show-form = false;
+                                show-password = true;
+                                successful = false;
+                            }
+                        }
+                        submit-breach(name, key) => {
+                            root.key = key;
+                            b-name = name;
+                            submit-breach(name);
+                            if successful {
+                                show-form = false;
+                                show-breach = true;
+                                successful = false;
+                            }
+                        }
+                        get-latest(key) => {
+                            root.key = key;
+                            get-latest();
+                            if successful {
+                                show-form = false;
+                                show-breach = true;
+                                back-to-all = false;
+                                successful = false;
+                            }
+                        }
+                        get-all(key) => {
+                            root.key = key;
+                            get-all();
+                            if successful {
+                                show-form = false;
+                                show-all = true;
+                                back-to-all = true;
+                                successful = false;
+                            }
+                        }
+                        option-changed(new-idx) => {
+                            root.key = key;
+                            form-idx = new-idx;
+                            account = "";
+                            password = "";
+                            b-name = "";
+
+                        }
+                    }
+    
+                    if show-password: HorizontalBox {
+                        padding: 0px;
+                        padding-top: 20px;
+                        alignment: center;
+    
+                        PasswordCard {
+                            count: password-count;
+                        }
+                    }
+    
+                    if show-pastes: Flickable {
+                        viewport-height: paste-list.preferred-height;
+                        paste-list := VerticalBox {
+                            padding: 0px;
+                            HorizontalBox {
+                                padding: 0px;
+                                spacing: 0px;
+                                height: 28px;
+                                Rectangle {
+                                    width: 28px;
+    
+                                    Image {
+                                        source: @image-url("icons/arrow-left.svg");
+                                        width: 20px;
+                                        height: 20px;
+                                        colorize: white;
+                                    }
+    
+                                    TouchArea {
+                                        width: parent.width;
+                                        height: parent.height;
+                                        mouse-cursor: pointer;
+                                        clicked => {
+                                            show-pastes = false;
+                                            show-form = true
+                                        }
+                                    }
+                                }
+    
+                                Rectangle { }
+                            }
+    
+                            for p in pastes: PasteSlip {
+                                title: p.title;
+                                date: p.date;
+                                source: p.source;
+                                pasteId: p.pasteId;
+                                emailCount: p.emailCount;
+                            }
+                        }
+                    }
+
+                    if show-breach: HorizontalBox {
+                        width: parent.width;
+                        height: parent.height;
+                        padding: 0px;
+                        padding-top: 20px;
+                        alignment: center;
+    
+                        Rectangle {
+                            width: parent.width;
+                            height: parent.height -22px;
+                            clip: true;
+                            Flickable {
+                                width: parent.width;
+                                height: parent.height;
+                                viewport-height: brch.preferred-height;
+                                brch := BreachCard {
+                                    name: breach.name;
+                                    domain: breach.domain;
+                                    pwn-count: breach.pwn-count;
+                                    description: breach.description;
+                                    breach-date: breach.breach-date;
+                                    data-classes: breach.data-classes;
+                                }
+                            }
+                        }
+                    }
+    
+                    if show-breaches: VerticalBox {
+                        padding: 0px;
+                        padding-left: 36px;
+                        padding-right: 36px;
+                        spacing: 8px;
+    
+                        Text {
+                            text: breaches.length == 0 ? "Safe" : "Warning !";
+                            font-size: 28px;
+                            font-weight: 600;
+                            color: breaches.length == 0 ? #6ec28a : #ff5959;
+                            horizontal-alignment: center;
+                            vertical-alignment: top;
+                        }
+    
+                        Text {
+                            text: breaches.length == 0 ?
+                                  "Good news — no pwnage found!\nThis email address wasn't found in any of the data breaches\nloaded into Have I Been Pwned. That's great news!":
+                                  breaches.length == 1 ?
+                                  "Oh no — pwned!\nThis email address has been found in a data breache\nReview the details below to see where your data was exposed":
+                                  "Oh no — pwned!\nThis email address has been found in multiple data breaches\nReview the details below to see where your data was exposed";
+    
+                            font-size: 12px;
+                            font-weight: 400;
+                            color: white;
+                            horizontal-alignment: center;
+                            vertical-alignment: top;
+                        }
+    
+                        Rectangle {height: 10px;}
+    
+                        Flickable {
+                            viewport-height: breach-list.preferred-height;
+                            breach-list := VerticalBox {
+                                padding: 0px;
+                                for b[i] in breaches: BreachSlip {
+                                    name: b.name;
+                                    domain: b.domain;
+                                    breach-date: b.breach-date;
+                                    open-breach() => {
+                                        show-breaches = false;
+                                        root.breach = breaches[i];
+                                        show-breach = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if show-all: VerticalBox {
+                        padding: 0px;
+                        padding-left: 36px;
+                        padding-right: 36px;
+                        spacing: 8px;
+    
+                        Text {
+                            text: "All HIBP Breaches";
+                            font-size: 28px;
+                            font-weight: 600;
+                            color: #6ec28a;
+                            horizontal-alignment: center;
+                            vertical-alignment: top;
+                        }
+    
+                        Text {
+                            text: "Click on a breach to review the details";
+                            font-size: 12px;
+                            font-weight: 400;
+                            color: white;
+                            horizontal-alignment: center;
+                            vertical-alignment: top;
+                        }
+    
+                        Rectangle {height: 10px;}
+    
+                        flickable := Flickable {
+                            viewport-height: all-breach-list.preferred-height;
+                            all-breach-list := VerticalBox {
+                                padding: 0px;
+                                for b[i] in breaches: BreachSlip {
+                                    visible: (flickable.height - flickable.viewport-y > self.y) && (self.y > -flickable.viewport-y - self.height);
+                                    name: b.name;
+                                    domain: b.domain;
+                                    breach-date: b.breach-date;
+                                    open-breach() => {
+                                        show-breaches = false;
+                                        root.breach = breaches[i];
+                                        show-breach = true;
+                                        show-all = false;
+                                        show-breaches = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        HorizontalBox {
+            height: 128px;
+            padding: 24px;
+            spacing: 10px;
+
+            info-card-1 := Rectangle {
+                background: white;
+                border-radius: 12px;
+                border-width: 1px;
+                border-color: #e0e0e0;
+                VerticalBox {
+                    padding: 10px;
+                    spacing: 0px;
+                    Text {
+                        text: "Total Breaches";
+                        font-size: 10px;
+                        color: #888;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        text: "919";
+                        font-size: 22px;
+                        font-weight: 700;
+                        color: #667eea;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            info-card-2 := Rectangle {
+                background: white;
+                border-radius: 12px;
+                border-width: 1px;
+                border-color: #e0e0e0;
+                VerticalBox {
+                    padding: 10px;
+                    spacing: 0px;
+                    Text {
+                        text: "Pwned Accounts";
+                        font-size: 10px;
+                        color: #888;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        text: "17.28B+";
+                        font-size: 22px;
+                        font-weight: 700;
+                        color: #ff5959;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            info-card-3 := Rectangle {
+                background: white;
+                border-radius: 12px;
+                border-width: 1px;
+                border-color: #e0e0e0;
+                TouchArea {
+                    height: 100%;
+                    width: 100%;
+                    mouse-cursor: pointer;
+                    clicked => {
+                        overlay-message = "This is an unofficial, third-party application and is not affiliated with, endorsed by, or connected to Have I Been Pwned (HIBP) or Troy Hunt. All data is provided by the official HIBP API. Use of this application is subject to HIBP's Terms of Service and API usage guidelines. This tool is provided \"as is\" without warranties. The developer is not responsible for data accuracy, service availability, or any misuse of the application. By using this tool, you acknowledge that you are responsible for compliance with HIBP's acceptable use policies.";
+                        overlay-title = "Disclaimer !";
+                    }
+                }
+
+                VerticalBox {
+                    padding: 10px;
+                    spacing: 0px;
+
+                    Text {
+                        text: "⚠ Disclaimer";
+                        font-size: 18px;
+                        color: #000000;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        text: "click to open";
+                        font-size: 10px;
+                        font-weight: 700;
+                        color: #888;
+                        horizontal-alignment: center;
+                        vertical-alignment: top;
+                    }
+                }
+            }
+        }
+    }
+}

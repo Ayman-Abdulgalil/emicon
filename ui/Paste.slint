@@ -1,0 +1,105 @@
+import { VerticalBox, HorizontalBox } from "std-widgets.slint";
+
+export component PasteSlip inherits Rectangle {
+    in property <string> title;
+    in property <string> date;
+    in property <string> source;
+    in property <string> pasteId;
+    in property <int> emailCount;
+
+    background: white;
+    border-radius: 16px;
+    drop-shadow-blur: 15px;
+    drop-shadow-color: rgba(0, 0, 0, 0.1);
+
+    VerticalLayout {
+        padding: 12px;
+        spacing: 8px;
+
+        HorizontalBox {
+            padding: 0px;
+            padding-bottom: 6px;
+            Text {
+                text: title;
+                font-size: 14px;
+                font-weight: 600;
+                color: #212529;
+                vertical-alignment: top;
+            }
+
+            Text {
+                text: pasteId;
+                font-size: 12px;
+                font-weight: 400;
+                color: #212529;
+                vertical-alignment: top;
+                horizontal-alignment: right;
+            }
+        }
+
+        HorizontalBox {
+            padding: 0px;
+            spacing: 6px;
+            Text {
+                text: "source:";
+                font-size: 11px;
+                font-weight: 400;
+                color: #495057;
+                vertical-alignment: center;
+            }
+
+            Text {
+                text: source;
+                font-size: 11px;
+                font-weight: 600;
+                color: #495057;
+                vertical-alignment: center;
+            }
+
+            Rectangle {
+                min-width: 24px;
+                horizontal-stretch: 1;
+            }
+
+            Text {
+                text: "date:";
+                font-size: 11px;
+                font-weight: 400;
+                color: #495057;
+                vertical-alignment: center;
+            }
+
+            Text {
+                text: date;
+                font-size: 11px;
+                font-weight: 600;
+                color: #495057;
+                vertical-alignment: center;
+            }
+        }
+
+        HorizontalBox {
+            padding: 0px;
+            spacing: 6px;
+            Text {
+                text: emailCount;
+                font-size: 11px;
+                font-weight: 600;
+                color: #495057;
+                vertical-alignment: center;
+            }
+
+            Text {
+                text: "emails found in this paste";
+                font-size: 11px;
+                font-weight: 400;
+                color: #495057;
+                vertical-alignment: center;
+            }
+
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+        }
+    }
+}

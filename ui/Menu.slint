@@ -1,0 +1,89 @@
+import { VerticalBox, HorizontalBox } from "std-widgets.slint";
+export component Menu inherits Rectangle {
+    in property <[string]> model: [];
+    in-out property <int> current-index: 0;
+    in-out property <string> current-value: model[current-index];
+    private property <bool> is-open: false;
+
+    callback changed(string);
+        
+    // Selected value display
+    HorizontalLayout {
+        padding: 8px;
+        padding-left: 18px;
+        spacing: 8px;
+        Text {
+            text: current-value;
+            vertical-alignment: center;
+            horizontal-alignment: left;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        // Arrow icon
+        VerticalBox {
+            padding: 0px;
+            padding-right: 8px;
+            alignment: center;
+            Image {
+                height: 16px;
+                width: 16px;
+
+                source: is-open ? @image-url("icons/chevron-up.svg") : @image-url("icons/chevron-down.svg");
+                vertical-alignment: center;
+                horizontal-alignment: center;
+
+                colorize: #666;
+            }
+        }
+    }
+    
+    // Click area for opening/closing
+    TouchArea {
+        clicked => {
+            is-open = !is-open;
+        }
+    }
+    
+    // Dropdown list
+    if is-open: Rectangle {
+        background: root.background;
+        y: root.y + 24px;
+        width: root.width;
+        height: model.length * 32px + 2px;
+        border-radius: root.border-radius;
+        border-width: root.border-width;
+        border-color: root.border-color;
+        drop-shadow-blur: root.drop-shadow-blur;
+        drop-shadow-color: root.drop-shadow-color;
+        
+        VerticalLayout {
+            padding: 1px;
+            spacing: 0px;
+            for item[index] in model: Rectangle {
+                height: 32px;
+                background: item-touch.has-hover ? #f0f0f0 : white;
+                border-radius: root.border-radius - 1px;
+                HorizontalLayout {
+                    padding: 8px;
+                    padding-left: 16px;
+                    Text {
+                        text: item;
+                        vertical-alignment: center;
+                        color: #495057;
+                        font-weight: index == current-index ? 700 : 400;
+                    }
+                }
+
+                item-touch := TouchArea {
+                    clicked => {
+                        current-index = index;  
+                        current-value = item;
+                        is-open = false;
+                        changed(item);
+                    }
+                }
+            }
+        }
+    }
+}

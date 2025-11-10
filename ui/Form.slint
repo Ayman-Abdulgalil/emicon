@@ -1,0 +1,519 @@
+import {
+    VerticalBox,
+    HorizontalBox,
+    ComboBox,
+    Slider,
+} from "std-widgets.slint";
+import { Menu } from "Menu.slint";
+
+export component FormCard inherits Rectangle {
+    in-out property <int> selected-option: 0;
+    in-out property <string> api-key;
+    in-out property <string> email-address;
+    in-out property <string> the-password;
+    in-out property <string> breach-name;
+    in property <length> set-width;
+    property <bool> hide-key: true;
+    property <bool> hide-password: true;
+
+    callback submit-e-breach(string, string);
+    callback submit-e-pastes(string, string);
+    callback submit-password(string, string);
+    callback submit-breach(string, string);
+    callback get-latest(string);
+    callback get-all(string);
+    callback overlay(string, string);
+    callback option-changed(int);
+
+    width: self.set-width;
+    height: 440px;
+
+    content := Rectangle {
+        background: white;
+        border-radius: 16px;
+        drop-shadow-blur: 15px;
+        drop-shadow-color: rgba(0, 0, 0, 0.1);
+
+        VerticalBox {
+            padding: 32px;
+            spacing: 18px;
+
+            ref-verbox := VerticalBox {
+                height: ref-text.height + ref-field.height + self.spacing;
+                padding: 0px;
+                spacing: 4px;
+                z: 1;
+
+                ref-text := Text {
+                    height: 22px;
+                    text: "Choose a search option";
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #495057;
+                }
+
+                ref-field := Menu {
+                    height: 40px;
+                    background: white;
+                    border-radius: 16px;
+                    border-width: 1px;
+                    border-color: #ccc;
+                    model: [
+                        "Lookup an email for breaches",
+                        "Lookup an email for pastes",
+                        "Lookup a password in data leaks",
+                        "Get a breach by name",
+                        "Get the latest HIBP breach",
+                        "Get all HIBP breaches"
+                    ];
+                    current-index <=> selected-option;
+
+                    changed => {
+                        option-changed(selected-option);
+                        email-address = "";
+                        the-password = "";
+                        breach-name = "";
+                        hide-password = true;
+                        hide-key = true;
+                    }
+                }
+            }
+
+            if selected-option == 0 || selected-option == 1: VerticalBox {
+                height: ref-verbox.height;
+                padding: ref-verbox.padding;
+                spacing: ref-verbox.spacing;
+                Text {
+                    height: ref-text.height;
+                    text: "Email Address";
+                    font-size: ref-text.font-size;
+                    font-weight: ref-text.font-weight;
+                    color: ref-text.color;
+                }
+
+                Rectangle {
+                    height: ref-field.height;
+                    background: ref-field.background;
+                    border-radius: ref-field.border-radius;
+                    border-width: ref-field.border-width;
+                    border-color: ref-field.border-color;
+
+                    TouchArea {
+                        z: 1;
+                        height: parent.height;
+                        width: parent.width;
+                        mouse-cursor: text;
+                        clicked => {
+                            input.focus();
+                            input.select-all();
+                            input.set-selection-offsets(input.text.character-count, input.text.character-count);
+                        }
+                    }
+
+                    HorizontalBox {
+                        z: 0;
+                        padding: 5px;
+                        padding-left: 18px;
+                        padding-right: 18px;
+
+                        Rectangle {
+                            width: parent.width - 36px;
+                            clip: true;
+                            Flickable {
+                                height: parent.height;
+                                viewport-width: input.preferred-width;
+                                input := TextInput {
+                                    z: 1;
+                                    height: parent.height - 10px;
+                                    text <=> email-address;
+                                    vertical-alignment: center;
+                                    single-line: true;
+                                    font-size: 12px;
+                                    font-weight: 500;
+                                    color: #6c757d;
+                                    input-type: text;
+                                    init => {
+                                        self.focus();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if selected-option == 0 || selected-option == 1: VerticalBox {
+                height: ref-verbox.height;
+                padding: ref-verbox.padding;
+                spacing: ref-verbox.spacing;
+
+                Text {
+                    height: ref-text.height;
+                    text: "API Key";
+                    font-size: ref-text.font-size;
+                    font-weight: ref-text.font-weight;
+                    color: ref-text.color;
+                }
+
+                Rectangle {
+                    height: ref-field.height;
+                    background: ref-field.background;
+                    border-radius: ref-field.border-radius;
+                    border-width: ref-field.border-width;
+                    border-color: ref-field.border-color;
+
+                    TouchArea {
+                        z: 1;
+                        height: parent.height;
+                        width: parent.width;
+                        mouse-cursor: text;
+                        clicked => {
+                            key-input.focus();
+                            key-input.select-all();
+                            key-input.set-selection-offsets(key-input.text.character-count, key-input.text.character-count);
+                        }
+                    }
+
+                    HorizontalBox {
+                        z: 0;
+                        padding: 5px;
+                        padding-left: 18px;
+                        padding-right: 44px;
+
+                        Rectangle {
+                            clip: true;
+                            Flickable {
+                                height: parent.height;
+                                width: parent.width;
+                                viewport-width: key-input.preferred-width;
+                                key-input := TextInput {
+                                    height: parent.height;
+                                    vertical-alignment: center;
+                                    single-line: true;
+                                    font-size: 12px;
+                                    font-weight: 500;
+                                    color: #6c757d;
+                                    input-type: hide-key ? password : text;
+                                    text <=> api-key;
+                                    edited => {
+                                        api-key = self.text;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    HorizontalBox {
+                        padding: 0px;
+                        spacing: 0px;
+                        alignment: end;
+                        z: 2;
+
+                        VerticalBox {
+                            padding: 0px;
+                            padding-right: 16px;
+                            alignment: center;
+
+                            if hide-key: Image {
+                                width: 16px;
+                                height: 16px;
+                                source: @image-url("icons/eye.svg");
+                                colorize: #6c757d;
+                                TouchArea {
+                                    mouse-cursor: pointer;
+                                    clicked => {
+                                        hide-key = false;
+                                    }
+                                }
+                            }
+                            if !hide-key: Image {
+                                width: 16px;
+                                height: 16px;
+                                source: @image-url("icons/eye-slash.svg");
+                                colorize: #6c757d;
+                                TouchArea {
+                                    mouse-cursor: pointer;
+                                    clicked => {
+                                        hide-key = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if selected-option == 2: Rectangle {
+                VerticalBox {
+                    height: ref-verbox.height;
+                    padding: ref-verbox.padding;
+                    spacing: ref-verbox.spacing;
+                    Text {
+                        height: ref-text.height;
+                        text: "Password";
+                        font-size: ref-text.font-size;
+                        font-weight: ref-text.font-weight;
+                        color: ref-text.color;
+                    }
+
+                    Rectangle {
+                        height: ref-field.height;
+                        background: ref-field.background;
+                        border-radius: ref-field.border-radius;
+                        border-width: ref-field.border-width;
+                        border-color: ref-field.border-color;
+
+                        TouchArea {
+                            z: 1;
+                            height: parent.height;
+                            width: parent.width;
+                            mouse-cursor: text;
+                            clicked => {
+                                pass-input.focus();
+                                pass-input.select-all();
+                                pass-input.set-selection-offsets(pass-input.text.character-count, pass-input.text.character-count);
+                            }
+                        }
+
+                        HorizontalBox {
+                            z: 0;
+                            padding: 5px;
+                            padding-left: 18px;
+                            padding-right: 44px;
+
+                            Rectangle {
+                                // width: parent.width - 64px;
+                                clip: true;
+                                Flickable {
+                                    height: parent.height;
+                                    viewport-width: pass-input.preferred-width;
+                                    pass-input := TextInput {
+                                        z: 1;
+                                        height: parent.height - 10px;
+                                        text <=> the-password;
+                                        vertical-alignment: center;
+                                        single-line: true;
+                                        font-size: 12px;
+                                        font-weight: 500;
+                                        color: #6c757d;
+                                        input-type: selected-option == 2 ? hide-password ? password : text : text;
+
+                                        init => {
+                                            self.focus();
+                                        }
+
+                                        accepted => {
+                                            if the-password != "" {
+                                                hide-key = true;
+                                                hide-password = true;
+                                                submit-password(the-password, api-key);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                HorizontalBox {
+                    padding: 0px;
+                    padding-top: 28px;
+                    spacing: 0px;
+                    alignment: end;
+                    z: 2;
+                    if selected-option == 2: VerticalBox {
+                        padding: 0px;
+                        padding-right: 16px;
+                        alignment: center;
+                        if hide-password: Image {
+                            width: 16px;
+                            height: 16px;
+                            source: @image-url("icons/eye.svg");
+                            colorize: #6c757d;
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    hide-password = false;
+                                }
+                            }
+                        }
+                        if !hide-password: Image {
+                            width: 16px;
+                            height: 16px;
+                            source: @image-url("icons/eye-slash.svg");
+                            colorize: #6c757d;
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    hide-password = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if selected-option == 2: Rectangle {
+                height: 28px;
+                background: #d0fad4;
+                border-radius: 16px;
+                border-width: 1px;
+                border-color: #6ec28a;
+                HorizontalBox {
+                    alignment: center;
+                    Text {
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                        text: "Your password is hashed and protected";
+                        font-size: 11px;
+                        font-weight: 500;
+                        color: #44a049;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+
+            if selected-option == 3: VerticalBox {
+                height: ref-verbox.height;
+                padding: ref-verbox.padding;
+                spacing: ref-verbox.spacing;
+                Text {
+                    height: ref-text.height;
+                    text: "Breach Name";
+                    font-size: ref-text.font-size;
+                    font-weight: ref-text.font-weight;
+                    color: ref-text.color;
+                }
+
+                Rectangle {
+                    height: ref-field.height;
+                    background: ref-field.background;
+                    border-radius: ref-field.border-radius;
+                    border-width: ref-field.border-width;
+                    border-color: ref-field.border-color;
+
+                    TouchArea {
+                        z: 1;
+                        height: parent.height;
+                        width: parent.width;
+                        mouse-cursor: text;
+                        clicked => {
+                            breach-input.focus();
+                            breach-input.select-all();
+                            breach-input.set-selection-offsets(breach-input.text.character-count, breach-input.text.character-count);
+                        }
+                    }
+
+                    HorizontalBox {
+                        z: 0;
+                        padding: 5px;
+                        padding-left: 18px;
+                        padding-right: 18px;
+
+                        Rectangle {
+                            width: parent.width - 36px;
+                            clip: true;
+                            Flickable {
+                                height: parent.height;
+                                viewport-width: breach-input.preferred-width;
+                                breach-input := TextInput {
+                                    z: 1;
+                                    height: parent.height - 10px;
+                                    text <=> breach-name;
+                                    vertical-alignment: center;
+                                    single-line: true;
+                                    font-size: 12px;
+                                    font-weight: 500;
+                                    color: #6c757d;
+                                    input-type: selected-option == 2 ? hide-password ? password : text : text;
+
+                                    init => {
+                                        self.focus();
+                                    }
+
+                                    accepted => {
+                                        if breach-name != "" {
+                                            hide-key = true;
+                                            hide-password = true;
+                                            submit-breach(breach-name, api-key);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Text {
+                text: (selected-option == 0 || selected-option == 1) ? "An api key is required for email lookups\nIf you don't have a subscription, use the testing key (32 zeros) :\n00000000000000000000000000000000\nNote: this key can only be used with HIBP testing accounts" : (selected-option == 2) ? "\n\nPasswords API does not require any key or authentication\nIt is free for all, under fare usage limits" : "\n\nBreach lookups do not require a key or authentication unless you do it on batches\n It is free for all, under fare usage limits";
+                font-size: 10px;
+                font-weight: 500;
+                color: #6c757d;
+                horizontal-alignment: center;
+            }
+
+            VerticalBox {
+                padding: 0px;
+                spacing: 0px;
+                Rectangle {
+                    vertical-stretch: 1;
+                }
+
+                HorizontalBox {
+                    padding: 0px;
+                    alignment: center;
+                    Rectangle {
+                        width: 180px;
+                        height: 56px;
+                        background: @linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        border-radius: 12px;
+                        drop-shadow-blur: 10px;
+                        drop-shadow-color: rgba(102, 126, 234, 0.4);
+                        TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                hide-key = true;
+                                hide-password = true;
+                                if (api-key == "") && (selected-option == 0 || selected-option == 1) {
+                                    overlay("Error !", "You need to provide an API key to proceed with this search option. Or use the testing api key provided by HIBP:00000000000000000000000000000000 (32 zeros). Note: This key can only be used with the testing accounts provided by HIBP. It is also subjected to rate limiting");
+                                    return;
+                                }
+                                if (email-address == "" && the-password == "" && breach-name == "") && (selected-option != 4 && selected-option != 5) {
+                                    overlay("Error !", "The input field cannot be empty. Please provide a valid value to proceed");
+                                    return;
+                                }
+                                if (selected-option == 0) {
+                                    submit-e-breach(email-address, api-key);
+                                } else if (selected-option == 1) {
+                                    submit-e-pastes(email-address, api-key);
+                                } else if (selected-option == 2) {
+                                    submit-password(the-password, api-key);
+                                } else if (selected-option == 3) {
+                                    submit-breach(breach-name, api-key);
+                                } else if (selected-option == 4) {
+                                    get-latest(api-key);
+                                } else {
+                                    get-all(api-key);
+                                }
+                            }
+                        }
+
+                        HorizontalBox {
+                            alignment: center;
+                            Text {
+                                text: "Submit";
+                                font-size: 18px;
+                                font-weight: 600;
+                                color: white;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
