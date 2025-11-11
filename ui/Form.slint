@@ -79,7 +79,7 @@ export component FormCard inherits Rectangle {
                 }
             }
 
-            if selected-option == 0 || selected-option == 1: VerticalBox {
+            if selected-option == 0: VerticalBox {
                 height: ref-verbox.height;
                 padding: ref-verbox.padding;
                 spacing: ref-verbox.spacing;
@@ -139,7 +139,7 @@ export component FormCard inherits Rectangle {
                 }
             }
 
-            if selected-option == 0 || selected-option == 1: VerticalBox {
+            if selected-option == 0: VerticalBox {
                 height: ref-verbox.height;
                 padding: ref-verbox.padding;
                 spacing: ref-verbox.spacing;
@@ -436,8 +436,8 @@ export component FormCard inherits Rectangle {
             }
 
             Text {
-                text: (selected-option == 0 || selected-option == 1) ? "An api key is required for email lookups\nIf you don't have a subscription, use the testing key (32 zeros) :\n00000000000000000000000000000000\nNote: this key can only be used with HIBP testing accounts" : (selected-option == 2) ? "\n\nPasswords API does not require any key or authentication\nIt is free for all, under fare usage limits" : "\n\nBreach lookups do not require a key or authentication unless you do it on batches\n It is free for all, under fare usage limits";
-                font-size: 10px;
+                text: (selected-option == 0) ? "An api key is required for email lookups\nIf you don't have a subscription, use the testing key (32 zeros) :\n00000000000000000000000000000000\nNote: this key can only be used with HIBP testing accounts" : (selected-option == 2) ? "\n\nPasswords API does not require any key or authentication\nIt is free for all, under fare usage limits" : (selected-option == 1) ? "\n\n\n\nThe email pastes endpoint currently has a service \nissue. Please try again later, or try the other\nsearch options !" : "\n\nBreach lookups do not require a key or authentication unless you do it on batches\n It is free for all, under fare usage limits";
+                font-size: selected-option == 1 ? 16px : 10px;
                 font-weight: 500;
                 color: #6c757d;
                 horizontal-alignment: center;
@@ -460,7 +460,7 @@ export component FormCard inherits Rectangle {
                         border-radius: 12px;
                         drop-shadow-blur: 10px;
                         drop-shadow-color: rgba(102, 126, 234, 0.4);
-                        TouchArea {
+                        if selected-option != 1: TouchArea {
                             mouse-cursor: pointer;
                             clicked => {
                                 hide-key = true;
@@ -492,7 +492,7 @@ export component FormCard inherits Rectangle {
                         HorizontalBox {
                             alignment: center;
                             Text {
-                                text: "Submit";
+                                text: selected-option != 1 ? "Submit" : "X";
                                 font-size: 18px;
                                 font-weight: 600;
                                 color: white;
